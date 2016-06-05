@@ -45,11 +45,11 @@ def main ():
 	elif (len(sys.argv) == 5):
 		[infile, tablename, tablewidth, sizebytes] = sys.argv[1:]
 	else:	
-	     print '\nUsage: python bmp2hex.py <infile> <tablename> [tablewidth] [sizebytes]\n'
-	     print 'infile       : Input file path'
-	     print 'tablename    : Name of output table'
-	     print 'tablewidth   : Width of output table in hex bytes [default: 16]'
-	     print 'sizebytes    : Byte width of sizes: 0=auto, 1, or 2 (big endian) [default: auto]\n'
+	     print ('\nUsage: python bmp2hex.py <infile> <tablename> [tablewidth] [sizebytes]\n')
+	     print ('infile       : Input file path')
+	     print ('tablename    : Name of output table')
+	     print ('tablewidth   : Width of output table in hex bytes [default: 16]')
+	     print ('sizebytes    : Byte width of sizes: 0=auto, 1, or 2 (big endian) [default: auto]\n')
 	     sys.exit(1)
 
 	# Convert parameters to numbers
@@ -101,12 +101,12 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes):
 	# Output the hex table declaration followed by the image x and y size
 	# sizebytes=1: image x/y are single byte sizes
 	# sizebytes=2: image x/y are double byte sizes (big endian)
-	print 'const unsigned char PROGMEM ' + tablename + ' [] = {'
+	print ('const unsigned char PROGMEM ' + tablename + ' [] = {')
 	if (not (sizebytes%2)):
-		print "{0:#04X}".format((pixelWidth>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelWidth & 0xFF) + ", " + \
-		      "{0:#04X}".format((pixelHeight>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ","
+		print ("{0:#04X}".format((pixelWidth>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelWidth & 0xFF) + ", " + \
+		      "{0:#04X}".format((pixelHeight>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
 	else:
-		print "{0:#04X}".format(pixelWidth & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ","
+		print ("{0:#04X}".format(pixelWidth & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
 	
 	# Get offset to BMP data (Byte 10 of the bmp data)
 	BMPOffset = getLONG(values, 10)
@@ -121,8 +121,8 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes):
 	# Wrap the output buffer. Print. Then, finish.
 	finally:
 		outstring = textwrap.fill(outstring[:-2], tablewidth)
-		print outstring
-		print  "};"
+		print (outstring)
+		print ("};")
 
 
 # Only run if launched from commandline

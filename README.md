@@ -1,9 +1,10 @@
 # bmp2hex
 
 ```
-Author:    Robert Gallup (bg@robertgallup.com)
-Date:      March 9, 2016
-License:   MIT Opensource License (see license.txt) 
+Author:    		Robert Gallup (bg@robertgallup.com)
+Date:      		March 9, 2016
+License:   		MIT Opensource License (see license.txt) 
+Compatability: 	Python 2/3
 ```
 
 Command line Python utility to output a table of hex values representing the size and data in a bmp graphics file. This would typically be used to create graphics for display by a microprocessor, say an Arduino, on an OLED or LCD.
@@ -22,17 +23,17 @@ $ python bmp2hex.py <infile> <tablename> [tablewidth] [sizebytes]
 
 ### Where:
 
-\<_infile_\>	 = Path to input bmp file<br />
+\<_infile_\> = Path to input bmp file<br />
 \<_tablename_\> = Name to use for the output table<br />
-\[_tablewidth_\] = Width of table in infile bytes. Default = 16 (optional)<br />
-\[_sizebytes_\] = Number of bytes for size (optional). 0=auto, 1 or 2 (big endian)
+\[_tablewidth_\] = Width of table in infile bytes (optional). [_Default = 16_]<br />
+\[_sizebytes_\] = Number of bytes for size (optional). 0=auto, 1 or 2 (big endian) [_default = 0_]
 
 ### Example:
 
 ``` bash
 $ python bmp2hex.py soba.bmp SOBA 8 2
 ```
-
+Process the file _soba.bmp_. Name the output table _SOBA_. Display the table with _8_ hex bytes on each row. Display the x/y sizes of the table using _2_ bytes, the first byte is the most significant (big endian).
 ### Output:
 
 ```
