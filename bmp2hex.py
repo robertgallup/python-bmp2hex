@@ -6,12 +6,12 @@
 #
 #	The BMP format is well publicized. The byte order of the actual bitmap is a
 #	little unusual. The image is stored bottom to top, left to right. In addition,
-#	The pixel rows are rounded to DWORDS which are 4 bytes long. SO, to convert this
-#   to left to right, top to bottom, no byte padding. We have to do some calculations
-#	as we loop through the rows and bytes of the image. See below for more
+#	The pixel rows are rounded to DWORDS which are 4 bytes long. To convert this format
+#   to left to right, top to bottom, no byte padding, calculations are necessary
+#	while looping through the rows and bytes of the image. See below for more.
 #
 #	Usage: 
-#	>>>int8_t2mozzi.py <infile outfile>
+#	>>>bmp2hex.py <infile outfile>
 #	
 #	@param infile		The file to convert.
 #	@param tablename	The name of the table to create
@@ -19,7 +19,7 @@
 #	@param sizebytes	0, 1, or 2. 0 = auto. 1 = 1-byte for sizes. 2 = 2-byte sizes
 #	
 #	@author Robert Gallup 2016-02
-#	@fn bmp2hex
+#	@fn python bmp2hex.py <infile> <tablename> [tablewidth] [sizebytes]
 #
 #	Author:    Robert Gallup (bg@robertgallup.com)
 #	License:   MIT Opensource License
@@ -48,7 +48,7 @@ def main ():
 	     print ('\nUsage: python bmp2hex.py <infile> <tablename> [tablewidth] [sizebytes]\n')
 	     print ('infile       : Input file path')
 	     print ('tablename    : Name of output table')
-	     print ('tablewidth   : Width of output table in hex bytes [default: 16]')
+	     print ('tablewidth   : Formatted width of output table in hex bytes [default: 16]')
 	     print ('sizebytes    : Byte width of sizes: 0=auto, 1, or 2 (big endian) [default: auto]\n')
 	     sys.exit(1)
 
