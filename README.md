@@ -18,20 +18,22 @@ Results from bmp2hex.py are directed to **standard output**. You can redirect th
 ### The command line is:
 
 ``` bash
-$ python bmp2hex.py <infile> <tablename> [tablewidth] [sizebytes]
+$ python bmp2hex.py [-h] [-i] [-w WIDTH] [-b BYTESIZE] infile tablename
 ```
 
 ### Where:
 
-\<_infile_\> = Path to input bmp file<br />
-\<_tablename_\> = Name to use for the output table<br />
-\[_tablewidth_\] = Width of table in infile bytes (optional). [_Default = 16_]<br />
-\[_sizebytes_\] = Number of bytes for size (optional). 0=auto, 1 or 2 (big endian) [_default = 0_]
+_-h, \-\-help_ = Help<br />
+_-i, \-\-invert_ = Invert image pixels<br />
+_WIDTH_ = Width of table in infile bytes (optional). [_Default = 16_]<br />
+_BYTESIZE_ = Number of bytes for size (optional). 0=auto, 1 or 2 (big endian) [_default = 0_]<br />
+_infile_ = Path to input bmp file<br />
+_tablename_ = Name to use for the output table<br />
 
 ### Example:
 
 ``` bash
-$ python bmp2hex.py soba.bmp SOBA 8 2
+$ python bmp2hex.py -w 8 -b 2  soba.bmp SOBA
 ```
 Process the file _soba.bmp_. Name the output table _SOBA_. Display the table with _8_ hex bytes on each row. Display the x/y sizes of the table using _2_ bytes, the first byte is the most significant (big endian).
 ### Output:
