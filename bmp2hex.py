@@ -11,16 +11,15 @@
 #	as we loop through the rows and bytes of the image. See below for more
 #
 #	Usage: 
-#	>>>int8_t2mozzi.py <infile outfile>
+#	>>>bmp2hex.py [-i] [-w <bytes>] [-b <size-bytes>] <infile> <tablename>
 #	
 #	@param infile		The file to convert.
 #	@param tablename	The name of the table to create
-#   @param inverse		"invert", if invert image [optional] 
-#	@param tablewidth	The number of characters for each row of the output table [optional]
-#	@param sizebytes	0, 1, or 2. 0 = auto. 1 = 1-byte for sizes. 2 = 2-byte sizes [optional]
+#   @param inverse		"-i", if invert image [optional] 
+#	@param tablewidth	"-w <bytes>, The number of characters for each row of the output table [optional]
+#	@param sizebytes	"-b <bytes>, Bytes = 0, 1, or 2. 0 = auto. 1 = 1-byte for sizes. 2 = 2-byte sizes (big endian) [optional]
 #	
 #	@author Robert Gallup 2016-02
-#	@fn bmp2hex
 #
 #	Author:    Robert Gallup (bg@robertgallup.com)
 #	License:   MIT Opensource License
@@ -39,6 +38,7 @@ def main ():
 	sizebytes = 0
 	invert = False
 
+	# Set up parser and handle arguments
 	parser = argparse.ArgumentParser()
 	parser.add_argument ("infile", help="The 1-bit BMP file to convert")
 	parser.add_argument ("tablename", help="The name of the output table")
@@ -47,9 +47,11 @@ def main ():
 	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
 	args = parser.parse_args()
 
+	# Required arguments
 	infile = args.infile
 	tablename = args.tablename
 
+	# Options
 	if args.invert:
 		invert = args.invert
 	if args.width:
@@ -57,12 +59,14 @@ def main ():
 	if args.bytes:
 		sizebytes = args.bytes % 3
 
+	# Do the work
 	bmp2hex(infile, tablename, tablewidth, sizebytes, invert)
 
-# Return a long int from array (little endian)
+# Utility function. Return a long int from array (little endian)
 def getLONG(a, n):
 	return (a[n+3] * (2**24)) + (a[n+2] * (2**16)) + (a[n+1] * (2**8)) + (a[n])
 
+# Main conversion function
 def bmp2hex(infile, tablename, tablewidth, sizebytes, invert):
 
 	invertbyte = 0x00 if invert else 0xFF
