@@ -10,8 +10,8 @@ Version:		2
 
 ## New in Version 2
 
-* Non-Windows BMP files are now flagged as unsupported.
-* 1-bit, grayscale (8-bit), and color (16-bit, 5/6/5 format) BMP files are now supported (sample files have been added to the repository). All of these files can be created using Adobe Photoshop (and, maybe GIMP)
+* Non-Windows .bmp files are now flagged as unsupported.
+* 1-bit, grayscale (8-bit), and color (16-bit, 5/6/5 format) .bmp files are now supported (sample files have been added to the repository). All of these files can be created using Adobe Photoshop (and, maybe GIMP)
 * There is now a creative, default name for the output bitmap data, *bitmap*.
 * The default output is now a C structure variable. This makes it easier to use in a C program. The original "raw" table format can still be output using the "-r" option.
 * The batch shell script has been changed to allow command line arguments. Any arguments added after the script invocation will be passed to bin2hex.
@@ -23,11 +23,11 @@ $ sh batch-bmp2hex.sh -w 16 >> bitmapdata.h
 
 ### Bin2Hex Overview
 
-Command line Python utility to output a table of hex values representing the size and data from a bmp graphics file. This would typically be used to create graphics for display by a microprocessor, say an Arduino, on an OLED or LCD.
+Command line Python utility to output a table of hex values representing the size and data from a .bmp graphics file. This would typically be used to create graphics for display by a microprocessor, say an Arduino, on an OLED or LCD.
 
 The *input* is a .bmp file. Windows format 1-bit, grayscale (8-bit), and color (16-bit) bitmaps are known to work.
 
-The *output* is a valid C structure variable definition for  the Arduino with meta data for image width and height. A _raw_ format is also supported with the image data defined as an array of const unsigned char. Since bitmaps can take a significant number of bytes, the PROGMEM keyword is used to place data in program memory, rather than on the stack.
+The *output* is a valid C structure variable definition with meta data for image width and height. A _raw_ format is also supported with the image data defined as an array of const unsigned char. Since bitmaps can take a significant number of bytes, the PROGMEM keyword is used to place data in program memory, rather than on the stack.
 
 Results from bmp2hex.py are directed to **standard output**. You can redirect them to a file, or use cut/paste to transfer the output to your code.
 
@@ -44,7 +44,7 @@ $ python bmp2hex.py [-h] [-i] [-r] [-w WIDTH] [-b BYTESIZE] infile [tablename]
 *-r, \-\-raw* : Output data in *raw* table format, not as a *structure*<br />
 *WIDTH* : Width of table in infile bytes (optional). \[*default: 16*\]<br />
 *BYTESIZE* : Number of bytes for size (optional). 0=auto, 1 or 2 (big endian) \[*default: 0*\]<br />
-*infile* : Path to input BMP file<br />
+*infile* : Path to input .bmp file<br />
 *tablename* : Name to use for the output table \[*default: 'bitmap'*\]<br />
 
 ### Example 1:
@@ -93,7 +93,7 @@ PROGMEM const struct {
 ``` bash
 $ python bmp2hex.py -r -w 12 sobaG.bmp SOBA
 ```
-Process the file, *sobaG.bmp*,* using a *raw* table format. Use a 12 hex bytes wide listing, and use the name, *SOBA* as the table name.
+Process the file, *sobaG.bmp*, using a *raw* table format. Use a 12 hex bytes wide listing, and use the name, *SOBA* as the table name.
 
 ### Output:
 
