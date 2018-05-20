@@ -15,7 +15,8 @@
 #	
 #	@param infile		The file to convert.
 #	@param tablename	The name of the table to create
-#   @param inverse		"-i", if invert image [optional] 
+#	@param raw			"-r", bitmap written as raw table [optional]
+#	@param invert		"-i", to invert image pixel colors [optional] 
 #	@param tablewidth	"-w <bytes>, The number of characters for each row of the output table [optional]
 #	@param sizebytes	"-b <bytes>, Bytes = 0, 1, or 2. 0 = auto. 1 = 1-byte for sizes. 2 = 2-byte sizes (big endian) [optional]
 #	
@@ -24,7 +25,7 @@
 #	Author:    Robert Gallup (bg@robertgallup.com)
 #	License:   MIT Opensource License
 #
-#	Copyright 2016 Robert Gallup 
+#	Copyright 2016-2018 Robert Gallup 
 #
 
 import sys, array, os, textwrap, math, random, argparse
@@ -37,11 +38,13 @@ def main ():
 	tablewidth = 16
 	sizebytes = 0
 	invert = False
+	raw = False
 
 	# Set up parser and handle arguments
 	parser = argparse.ArgumentParser()
-	parser.add_argument ("infile", help="The 1-bit BMP file to convert")
-	parser.add_argument ("tablename", help="The name of the output table")
+	parser.add_argument ("infile", help="The BMP file to convert")
+	parser.add_argument ("tablename", nargs="?", default="bitmap", help="The name of the output table. [default: 'bitmap']")
+	parser.add_argument ("-r", "--raw", help="Outputs all data in raw table format", action="store_true")
 	parser.add_argument ("-i", "--invert", help="Inverts bitmap pixels", action="store_true")
 	parser.add_argument ("-w", "--width", help="Output table width in hex bytes [default: 16]", type=int)
 	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
@@ -49,9 +52,12 @@ def main ():
 
 	# Required arguments
 	infile = args.infile
-	tablename = args.tablename
 
 	# Options
+	if args.tablename:
+		tablename = args.tablename
+	if args.raw:
+		raw = args.raw
 	if args.invert:
 		invert = args.invert
 	if args.width:
@@ -60,16 +66,18 @@ def main ():
 		sizebytes = args.bytes % 3
 
 	# Do the work
-	bmp2hex(infile, tablename, tablewidth, sizebytes, invert)
+	bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw)
 
 # Utility function. Return a long int from array (little endian)
 def getLONG(a, n):
 	return (a[n+3] * (2**24)) + (a[n+2] * (2**16)) + (a[n+1] * (2**8)) + (a[n])
 
-# Main conversion function
-def bmp2hex(infile, tablename, tablewidth, sizebytes, invert):
+# Utility function. Return an int from array (little endian)
+def getINT(a, n):
+	return ((a[n+1] * (2**8)) + (a[n]))
 
-	invertbyte = 0x00 if invert else 0xFF
+# Main conversion function
+def bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw):
 
 	# Convert tablewidth to characters from hex bytes
 	tablewidth = int(tablewidth) * 6
@@ -89,13 +97,20 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes, invert):
 	# Get bytes from file
 	values=valuesfromfile.tolist()
 
-	# Calculate and print pixel size
-	pixelWidth  = getLONG(values, 18)
-	pixelHeight = getLONG(values, 22)
+	# Exit if it's not a Windows BMP
+	if ((values[0] != 0x42) or (values[1] != 0x4D)):
+		sys.exit ("Error: Unsupported BMP format. Make sure your file is a Windows BMP.")
 
-	# Calculate width in words and padded word width (each row is padded to 4-bytes)
-	wordWidth   = int(math.ceil(float(pixelWidth)/8.0))
-	paddedWidth = int(math.ceil(float(pixelWidth)/32.0) * 4)
+	# Calculate width, heigth
+	dataOffset	= getLONG(values, 10)	# Offset to image data
+	pixelWidth  = getLONG(values, 18)	# Width of image
+	pixelHeight = getLONG(values, 22)	# Height of image
+	bitDepth	= getINT (values, 28)	# Bits per pixel
+	dataSize	= getLONG(values, 34)   # Size of raw data
+
+	# Calculate line width in bytes and padded byte width (each row is padded to 4-byte multiples)
+	byteWidth	= int(math.ceil(float(pixelWidth * bitDepth)/8.0))
+	paddedWidth	= int(math.ceil(float(byteWidth)/4.0)*4.0)
 
 	# For auto (sizebytes = 0), set sizebytes to 1 or 2, depending on size of the bitmap
 	if (sizebytes==0):
@@ -104,30 +119,44 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes, invert):
 		else:
 			sizebytes = 1
 
-	# Output the hex table declaration followed by the image x and y size
-	# sizebytes=1: image x/y are single byte sizes
-	# sizebytes=2: image x/y are double byte sizes (big endian)
-	print ('const unsigned char PROGMEM ' + tablename + ' [] = {')
-	if (not (sizebytes%2)):
-		print ("{0:#04X}".format((pixelWidth>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelWidth & 0xFF) + ", " + \
-		      "{0:#04X}".format((pixelHeight>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
-	else:
-		print ("{0:#04X}".format(pixelWidth & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
-	
-	# Get offset to BMP data (Byte 10 of the bmp data)
-	BMPOffset = getLONG(values, 10)
+	# The invert byte is set based on the invert command line flag (but, the logic is reversed for 1-bit files)
+	invertbyte = 0xFF if invert else 0x00
+	if (bitDepth == 1):
+		invertbyte = invertbyte ^ 0xFF
 
-	# Generate HEX bytes in output buffer
+	# Output the hex table declaration
+	# Format depending on "raw" flag
+	if (raw):
+		print ('PROGMEM const unsigned char ' + tablename + ' [] = {')
+
+		if (not (sizebytes%2)):
+			print ("{0:#04X}".format((pixelWidth>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelWidth & 0xFF) + ", " + \
+		    	  "{0:#04X}".format((pixelHeight>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
+		else:
+			print ("{0:#04X}".format(pixelWidth & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
+
+	else:
+		print ('PROGMEM const struct {')
+		print ('  unsigned int   width;')
+		print ('  unsigned int   height;')
+		print ('  unsigned int   bytes_per_pixel;')
+		print ('  uint8_t  pixel_data[{0}];'.format(byteWidth * pixelHeight))
+		print ('} ' + tablename + ' = {')
+		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth/8))
+
+	# Generate HEX bytes for pixel data in output buffer
 	try:
 		for i in range(pixelHeight):
-			for j in range (wordWidth):
-				ndx = BMPOffset + ((pixelHeight-1-i) * paddedWidth) + j
+			for j in range (byteWidth):
+				ndx = dataOffset + ((pixelHeight-1-i) * paddedWidth) + j
 				outstring += "{0:#04X}".format(values[ndx] ^ invertbyte) + ", "
 
 	# Wrap the output buffer. Print. Then, finish.
 	finally:
 		outstring = textwrap.fill(outstring[:-2], tablewidth)
 		print (outstring)
+		if (not raw):
+			print ("}")
 		print ("};")
 
 

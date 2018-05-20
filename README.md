@@ -1,46 +1,69 @@
-# bmp2hex
+# bmp2hex - Graphics bitmap file to C-style hex converter
 
 ```
 Author:    		Robert Gallup (bg@robertgallup.com)
-Date:      		March 9, 2016
+Date:      		March 20, 2018
 License:   		MIT Opensource License (see license.txt) 
 Compatability: 	Python 2/3
+Version:		2
 ```
 
-Command line Python utility to output a table of hex values representing the size and data in a bmp graphics file. This would typically be used to create graphics for display by a microprocessor, say an Arduino, on an OLED or LCD.
+## New in Version 2
 
-The _input_ is a 1-bit .bmp file (color bmp files will not work)
+* Non-Windows BMP files are now flagged as unsupported.
+* 1-bit, grayscale (8-bit), and color (16-bit, 5/6/5 format) BMP files are now supported (sample files have been added to the repository). All of these files can be created using Adobe Photoshop (and, maybe GIMP)
+* There is now a creative, default name for the output bitmap data, *bitmap*.
+* The default output is now a C structure variable. This makes it easier to use in a C program. The original "raw" table format can still be output using the "-r" option.
+* The batch shell script has been changed to allow command line arguments. Any arguments added after the script invocation will be passed to bin2hex.
+* Also in the batch script, by default, *bin2hex* output is directed to the terminal. If you want it in a file, you can use ">>" redirection on the batch command. E.g., to output converted bitmaps to the file, *bitmapdata.h* use:
 
-The _output_ is a valid C variable definition for  the Arduino. The bytes are defined as an array of const unsigned char. Since bitmaps can takea significant number of bytes, the PROGMEM keyword is used to place the data in program memory, rather than on the stack.
+``` bash
+$ sh batch-bmp2hex.sh -w 16 >> bitmapdata.h
+```
+
+### Bin2Hex Overview
+
+Command line Python utility to output a table of hex values representing the size and data from a bmp graphics file. This would typically be used to create graphics for display by a microprocessor, say an Arduino, on an OLED or LCD.
+
+The *input* is a .bmp file. Windows format 1-bit, grayscale (8-bit), and color (16-bit) bitmaps are known to work.
+
+The *output* is a valid C structure variable definition for  the Arduino with meta data for image width and height. A _raw_ format is also supported with the image data defined as an array of const unsigned char. Since bitmaps can take a significant number of bytes, the PROGMEM keyword is used to place data in program memory, rather than on the stack.
 
 Results from bmp2hex.py are directed to **standard output**. You can redirect them to a file, or use cut/paste to transfer the output to your code.
 
 ### The command line is:
 
 ``` bash
-$ python bmp2hex.py [-h] [-i] [-w WIDTH] [-b BYTESIZE] infile tablename
+$ python bmp2hex.py [-h] [-i] [-r] [-w WIDTH] [-b BYTESIZE] infile [tablename]
 ```
 
 ### Where:
 
-_-h, \-\-help_ = Help<br />
-_-i, \-\-invert_ = Invert image pixels<br />
-_WIDTH_ = Width of table in infile bytes (optional). [_Default = 16_]<br />
-_BYTESIZE_ = Number of bytes for size (optional). 0=auto, 1 or 2 (big endian) [_default = 0_]<br />
-_infile_ = Path to input bmp file<br />
-_tablename_ = Name to use for the output table<br />
+*-h, \-\-help* : Help<br />
+*-i, \-\-invert* : Invert image pixel colors<br />
+*-r, \-\-raw* : Output data in *raw* table format, not as a *structure*<br />
+*WIDTH* : Width of table in infile bytes (optional). \[*default: 16*\]<br />
+*BYTESIZE* : Number of bytes for size (optional). 0=auto, 1 or 2 (big endian) \[*default: 0*\]<br />
+*infile* : Path to input BMP file<br />
+*tablename* : Name to use for the output table \[*default: 'bitmap'*\]<br />
 
-### Example:
+### Example 1:
 
 ``` bash
-$ python bmp2hex.py -w 8 -b 2  soba.bmp SOBA
+$ python bmp2hex.py -w 8 soba.bmp SOBA
 ```
-Process the file _soba.bmp_. Name the output table _SOBA_. Display the table with _8_ hex bytes on each row. Display the x/y sizes of the table using _2_ bytes, the first byte is the most significant (big endian).
+Process the file *soba.bmp*. Name the output table *SOBA*. Display the pixel data with *8* hex bytes on each row.
+
 ### Output:
 
 ```
-const unsigned char PROGMEM SOBA [] = {
-0X00, 0X28, 0X00, 0X20,
+PROGMEM const struct {
+  unsigned int   width;
+  unsigned int   height;
+  unsigned int   bytes_per_pixel;
+  uint8_t  pixel_data[160];
+} SOBA = {
+40, 32, 0, {
 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
 0X00, 0X00, 0X00, 0X80, 0X00, 0X00, 0X00, 0X01,
@@ -60,6 +83,129 @@ const unsigned char PROGMEM SOBA [] = {
 0XFC, 0X00, 0X00, 0X1F, 0XFF, 0XF8, 0X00, 0X00,
 0X0F, 0XFF, 0XF0, 0X00, 0X00, 0X03, 0XFF, 0XC0,
 0X00, 0X00, 0X01, 0XFF, 0X80, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00
+}
+};
+```
+
+### Example 2:
+
+``` bash
+$ python bmp2hex.py -r -w 12 sobaG.bmp SOBA
+```
+Process the file, *sobaG.bmp*,* using a *raw* table format. Use a 12 hex bytes wide listing, and use the name, *SOBA* as the table name.
+
+### Output:
+
+```
+PROGMEM const unsigned char SOBA [] = {
+0X28, 0X20,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0XFF, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0XFF,
+0XFF, 0X00, 0X00, 0XFF, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0XFF, 0XFF, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00,
+0XFF, 0XFF, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0XFF,
+0XFF, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X57,
+0X57, 0X58, 0X58, 0X57, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X57, 0X57, 0X58, 0X57, 0X00, 0X58, 0X57, 0X57, 0X57, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0XFF, 0XFF, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X58, 0X57, 0X58, 0X58, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X57, 0X57, 0X57, 0X58, 0X00, 0X00, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00,
+0XFF, 0XFF, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X57, 0X57, 0X57, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X57, 0X57, 0X57, 0X00, 0X00, 0XFF,
+0XFF, 0X00, 0X00, 0XFF, 0XFF, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A,
+0X8A, 0X8B, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8B,
+0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8B, 0X8A, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8A,
+0X8A, 0X8B, 0X8A, 0X8A, 0X8B, 0X8A, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8A,
+0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8B, 0X8A, 0X8A,
+0X8A, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B,
+0X8A, 0X8A, 0X8A, 0X8A, 0X8A, 0X8B, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A,
+0X8A, 0X8B, 0X8B, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8A,
+0X8A, 0X8B, 0X8B, 0X8A, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A, 0X8A, 0X8A,
+0X8B, 0X8A, 0X8A, 0X8A, 0X8B, 0X8B, 0X8B, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A,
+0X8A, 0X8B, 0X8A, 0X8A, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B,
+0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A, 0X8A, 0X8A, 0X8A, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8A, 0X8B,
+0X8A, 0X8A, 0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B,
+0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A, 0X8A, 0X8A, 0X8A, 0X8B, 0X8A,
+0X8B, 0X8A, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X8B, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8B,
+0X8A, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A,
+0X8A, 0X8A, 0X8B, 0X8A, 0X8A, 0X8B, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B,
+0X8A, 0X8B, 0X8A, 0X8A, 0X8A, 0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B,
+0X8B, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A, 0X8A, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8B,
+0X8B, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B,
+0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8B, 0X8A, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A,
+0X8B, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X8B, 0X8A, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B,
+0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8B,
+0X8A, 0X8A, 0X8B, 0X8A, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8A, 0X8B, 0X8A,
+0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A, 0X8A, 0X8A, 0X8A, 0X8B, 0X8A, 0X8A,
+0X8A, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X8B, 0X8A, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A,
+0X8A, 0X8A, 0X8A, 0X8A, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8B, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B,
+0X8A, 0X8B, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B, 0X8B, 0X8A,
+0X8A, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X8A, 0X8A, 0X8B, 0X8B, 0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X8B, 0X8A, 0X8B,
+0X8A, 0X8B, 0X8B, 0X8B, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8B, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A,
+0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X8B,
+0X8B, 0X8B, 0X8A, 0X8A, 0X8B, 0X8A, 0X8B, 0X8A, 0X8A, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
+0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00,
 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00
 };
 ```
