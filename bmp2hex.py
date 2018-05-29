@@ -48,6 +48,7 @@ def main ():
 	parser.add_argument ("-i", "--invert", help="Inverts bitmap pixels", action="store_true")
 	parser.add_argument ("-w", "--width", help="Output table width in hex bytes [default: 16]", type=int)
 	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
+	parser.add_argument ("-d", "--depth", help="Bit depth in pixels (only applies to structure format)", action="store_true")
 	args = parser.parse_args()
 
 	# Required arguments
@@ -64,6 +65,8 @@ def main ():
 		tablewidth = args.width
 	if args.bytes:
 		sizebytes = args.bytes % 3
+	if args.depth:
+		depth = args.depth
 
 	# Do the work
 	bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw)
@@ -139,10 +142,10 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw):
 		print ('PROGMEM const struct {')
 		print ('  unsigned int   width;')
 		print ('  unsigned int   height;')
-		print ('  unsigned int   bytes_per_pixel;')
+		print ('  unsigned int   bitDepth;')
 		print ('  uint8_t  pixel_data[{0}];'.format(byteWidth * pixelHeight))
 		print ('} ' + tablename + ' = {')
-		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth/8))
+		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth))
 
 	# Generate HEX bytes for pixel data in output buffer
 	try:
