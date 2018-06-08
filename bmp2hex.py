@@ -30,6 +30,9 @@
 
 import sys, array, os, textwrap, math, random, argparse
 
+class DEFAULTS(object):
+	TYPEDEF_NAME = 'GFXMeta'
+
 def main ():
 
 	# Default parameters
@@ -39,24 +42,28 @@ def main ():
 	sizebytes = 0
 	invert = False
 	raw = False
+	typedef = False
+	double = False
 
 	# Set up parser and handle arguments
 	parser = argparse.ArgumentParser()
-	parser.add_argument ("infile", help="The BMP file to convert")
-	parser.add_argument ("tablename", nargs="?", default="bitmap", help="The name of the output table. [default: 'bitmap']")
+	parser.add_argument ("infile", help="The BMP file(s) to convert", type=argparse.FileType('r'), nargs='+')
+	# parser.add_argument ("tablename", nargs="?", default="bitmap", help="The name of the output table. [default: 'bitmap']")
 	parser.add_argument ("-r", "--raw", help="Outputs all data in raw table format", action="store_true")
 	parser.add_argument ("-i", "--invert", help="Inverts bitmap pixels", action="store_true")
 	parser.add_argument ("-w", "--width", help="Output table width in hex bytes [default: 16]", type=int)
 	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
-	parser.add_argument ("-d", "--depth", help="Bit depth in pixels (only applies to structure format)", action="store_true")
+	parser.add_argument ("-t", "--typedef", help="Uses typedef (" + DEFAULTS.TYPEDEF_NAME + ") to structure data", action="store_true")
+	# parser.add_argument ("-m", "--meta", help="Outputs graphics without the typedef definition", action="store_true")
+	parser.add_argument ("-d", "--double", help="Defines data in 'words' rather than bytes", action="store_true")
 	args = parser.parse_args()
 
 	# Required arguments
 	infile = args.infile
 
 	# Options
-	if args.tablename:
-		tablename = args.tablename
+	# if args.tablename:
+	# 	tablename = args.tablename
 	if args.raw:
 		raw = args.raw
 	if args.invert:
@@ -65,11 +72,25 @@ def main ():
 		tablewidth = args.width
 	if args.bytes:
 		sizebytes = args.bytes % 3
-	if args.depth:
-		depth = args.depth
+	if args.typedef:
+		typedef = args.typedef
+	if args.double:
+		double = args.double
+
+	# Output typedef, if requested
+	if (typedef):
+		print ('typedef PROGMEM const struct {')
+		print ('  unsigned int   width;')
+		print ('  unsigned int   height;')
+		print ('  unsigned int   bitDepth;')
+		print ('  ' + ('uint8_t *', 'uint16_t *')[double] + 'pixel_data;')
+		print ('} ' + DEFAULTS.TYPEDEF_NAME + ';')
+		print ('')
 
 	# Do the work
-	bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw)
+	# bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw, typedef, meta)
+	for f in args.infile:
+		bmp2hex(f.name, tablewidth, sizebytes, invert, raw, typedef, double)
 
 # Utility function. Return a long int from array (little endian)
 def getLONG(a, n):
@@ -80,7 +101,10 @@ def getINT(a, n):
 	return ((a[n+1] * (2**8)) + (a[n]))
 
 # Main conversion function
-def bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw):
+def bmp2hex(infile, tablewidth, sizebytes, invert, raw, typedef, double):
+
+	# Set the table name to the uppercase root of the file name
+	tablename = os.path.splitext(infile)[0].upper()
 
 	# Convert tablewidth to characters from hex bytes
 	tablewidth = int(tablewidth) * 6
@@ -138,12 +162,20 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw):
 		else:
 			print ("{0:#04X}".format(pixelWidth & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
 
+	elif (typedef):
+		print ('const PROGMEM ' + ('uint8_t ', 'uint16_t ')[double] + tablename + '_PIXELS[] = {')
+
 	else:
 		print ('PROGMEM const struct {')
 		print ('  unsigned int   width;')
 		print ('  unsigned int   height;')
 		print ('  unsigned int   bitDepth;')
-		print ('  uint8_t  pixel_data[{0}];'.format(byteWidth * pixelHeight))
+
+		if (double):
+			print ('  uint16_t  pixel_data[{0}];'.format(byteWidth * pixelHeight / 2))
+		else:
+			print ('  uint8_t  pixel_data[{0}];'.format(byteWidth * pixelHeight))
+	
 		print ('} ' + tablename + ' = {')
 		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth))
 
@@ -158,9 +190,15 @@ def bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw):
 	finally:
 		outstring = textwrap.fill(outstring[:-2], tablewidth)
 		print (outstring)
-		if (not raw):
-			print ("}")
-		print ("};")
+		
+		if (typedef):
+			print ('};')
+			print (DEFAULTS.TYPEDEF_NAME + ' ' + tablename + '_META = {{{0}, {1}, {2}, '.format(pixelWidth, pixelHeight, bitDepth) + \
+				 ('(uint8_t *)', '(uint16_t *)')[double] + tablename + "_PIXELS};\n\n")
+		else:
+			if (not raw):
+				print ("}")
+			print ("};")
 
 
 # Only run if launched from commandline
