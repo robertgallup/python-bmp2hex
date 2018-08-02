@@ -43,6 +43,7 @@ $ python bmp2hex.py [-h] [-i] [-r] [-d] [-n] [-w WIDTH] [-b BYTESIZE] infile
 *-r, \-\-raw* : Output data in *raw* table format, not as a *structure* \[*default: anonymous structure*\]<br />
 *-d, \-\-double* : Uses double byte 'uint16_t' for pixels rather than the default, 'uint8_t'<br />
 *-n, \-\-named* : Uses a named structure to type each bitmap<br />
+*-x, \-\-xbm* : Reverses the bit order to be consistent with XBM format<br />
 *-w WIDTH* : Width of table in bytes. \[*default: 16*\]<br />
 *-b BYTESIZE* : In *raw* format only, the bytesize of bitmap dimensions. 0=auto, 1 or 2 (big endian) \[*default: 0*\]<br />
 *infile* : Path to input .bmp file. May use a list or wild cards for multiple files<br />

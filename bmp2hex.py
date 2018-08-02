@@ -44,6 +44,7 @@ def main ():
 	raw = False
 	named = False
 	double = False
+	xbm = False
 
 	# Set up parser and handle arguments
 	parser = argparse.ArgumentParser()
@@ -54,6 +55,7 @@ def main ():
 	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
 	parser.add_argument ("-n", "--named", help="Uses named structure (" + DEFAULTS.STRUCTURE_NAME + ") for data", action="store_true")
 	parser.add_argument ("-d", "--double", help="Defines data in 'words' rather than bytes", action="store_true")
+	parser.add_argument ("-x", "--xbm", help="Uses XBM bit order (low order bit is first pixel of byte)", action="store_true")
 	args = parser.parse_args()
 
 	# Required arguments
@@ -72,6 +74,8 @@ def main ():
 		named = args.named
 	if args.double:
 		double = args.double
+	if args.xbm:
+		xbm = args.xbm
 
 	# Output named structure, if requested
 	if (named):
@@ -87,7 +91,7 @@ def main ():
 	# Do the work
 	# bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw, structure, meta)
 	for f in args.infile:
-		bmp2hex(f.name, tablewidth, sizebytes, invert, raw, named, double)
+		bmp2hex(f.name, tablewidth, sizebytes, invert, raw, named, double, xbm)
 
 # Utility function. Return a long int from array (little endian)
 def getLONG(a, n):
@@ -97,8 +101,17 @@ def getLONG(a, n):
 def getINT(a, n):
 	return ((a[n+1] * (2**8)) + (a[n]))
 
+# Reverses pixels in byte
+def reflect(a):
+	r = 0
+	for i in range(8):
+		r <<= 1
+		r |= (a & 0x01)
+		a >>= 1
+	return (r)
+
 # Main conversion function
-def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double):
+def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 
 	# Set the table name to the uppercase root of the file name
 	tablename = os.path.splitext(infile)[0].upper()
@@ -176,7 +189,11 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double):
 		for i in range(pixelHeight):
 			for j in range (byteWidth):
 				ndx = dataOffset + ((pixelHeight-1-i) * paddedWidth) + j
-				outstring += "{0:#04x}".format(values[ndx] ^ invertbyte) + ", "
+				v = values[ndx] ^ invertbyte
+				if (xbm):
+					v = reflect(v)
+					# print ("{0:#04x}".format(v))
+				outstring += "{0:#04x}".format(v) + ", "
 
 	# Wrap the output buffer. Print. Then, finish.
 	finally:
