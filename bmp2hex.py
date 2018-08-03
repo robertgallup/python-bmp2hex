@@ -11,7 +11,7 @@
 #	as we loop through the rows and bytes of the image. See below for more
 #
 #	Usage: 
-#	>>>bmp2hex.py [-i] [-w <bytes>] [-b <size-bytes>] <infile> <tablename>
+#	>>>bmp2hex.py [-i] [-r] [-n] [-d] [-x] [-w <bytes>] [-b <size-bytes>] <infile> <tablename>
 #	
 #	@param infile		The file to convert.
 #	@param tablename	The name of the table to create
@@ -19,6 +19,10 @@
 #	@param invert		"-i", to invert image pixel colors [optional] 
 #	@param tablewidth	"-w <bytes>, The number of characters for each row of the output table [optional]
 #	@param sizebytes	"-b <bytes>, Bytes = 0, 1, or 2. 0 = auto. 1 = 1-byte for sizes. 2 = 2-byte sizes (big endian) [optional]
+#	@param named		"-n", use a names structure [optional]
+#	@param double		"-d", use double bytes rather than single ones [optional]
+#	@param xbm			"-x", use XBM format (bits reversed in byte) [optional]
+#	@param version		"-v", returns version number
 #	
 #	@author Robert Gallup 2016-02
 #
@@ -32,6 +36,7 @@ import sys, array, os, textwrap, math, random, argparse
 
 class DEFAULTS(object):
 	STRUCTURE_NAME = 'GFXMeta'
+	VERSION = '2.3'
 
 def main ():
 
@@ -45,10 +50,12 @@ def main ():
 	named = False
 	double = False
 	xbm = False
+	version = False
 
 	# Set up parser and handle arguments
 	parser = argparse.ArgumentParser()
-	parser.add_argument ("infile", help="The BMP file(s) to convert", type=argparse.FileType('r'), nargs='+')
+	# parser.add_argument ("infile", help="The BMP file(s) to convert", type=argparse.FileType('r'), nargs='+', default=['-'])
+	parser.add_argument ("infile", help="The BMP file(s) to convert", type=argparse.FileType('r'), nargs='*', default=['-'])
 	parser.add_argument ("-r", "--raw", help="Outputs all data in raw table format", action="store_true")
 	parser.add_argument ("-i", "--invert", help="Inverts bitmap pixels", action="store_true")
 	parser.add_argument ("-w", "--width", help="Output table width in hex bytes [default: 16]", type=int)
@@ -56,6 +63,7 @@ def main ():
 	parser.add_argument ("-n", "--named", help="Uses named structure (" + DEFAULTS.STRUCTURE_NAME + ") for data", action="store_true")
 	parser.add_argument ("-d", "--double", help="Defines data in 'words' rather than bytes", action="store_true")
 	parser.add_argument ("-x", "--xbm", help="Uses XBM bit order (low order bit is first pixel of byte)", action="store_true")
+	parser.add_argument ("-v", "--version", help="Returns the current bmp2hex version", action="store_true")
 	args = parser.parse_args()
 
 	# Required arguments
@@ -76,6 +84,8 @@ def main ():
 		double = args.double
 	if args.xbm:
 		xbm = args.xbm
+	if args.version:
+		print ('// bmp2hex version ' + DEFAULTS.VERSION)
 
 	# Output named structure, if requested
 	if (named):
@@ -89,8 +99,9 @@ def main ():
 		print ('')
 
 	# Do the work
-	# bmp2hex(infile, tablename, tablewidth, sizebytes, invert, raw, structure, meta)
 	for f in args.infile:
+		if f == '-':
+			sys.exit()
 		bmp2hex(f.name, tablewidth, sizebytes, invert, raw, named, double, xbm)
 
 # Utility function. Return a long int from array (little endian)
@@ -175,6 +186,11 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 	elif (named):
 		print ('PROGMEM ' + 'uint8_t const ' + tablename + '_PIXELS[] = {')
 
+	elif (xbm):
+		print ('#define ' + tablename + '_width ' + str(pixelWidth))
+		print ('#define ' + tablename + '_height ' + str(pixelHeight))
+		print ('PROGMEM uint8_t ' + tablename + '_bits[] = {')
+
 	else:
 		print ('PROGMEM const struct {')
 		print ('  unsigned int   width;')
@@ -205,7 +221,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 			print (DEFAULTS.STRUCTURE_NAME + ' const ' + tablename + ' = {{{0}, {1}, {2}, 0, '.format(pixelWidth, pixelHeight, bitDepth) + \
 				 ('(uint8_t *)', '(uint16_t *)')[double] + tablename + "_PIXELS};\n\n")
 		else:
-			if (not raw):
+			if (not (raw or xbm)):
 				print ("}")
 			print ("};")
 

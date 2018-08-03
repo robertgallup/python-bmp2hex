@@ -2,15 +2,20 @@
 
 ```
 Author:    		Robert Gallup (bg@robertgallup.com)
-Date:      		June 7, 2018
+Date:      		August 1, 2018
 License:   		MIT Opensource License (see license.txt) 
 Compatability: 	Python 2/3
-Version:		2.2
+Version:		2.3
 ```
+
+## New in Version 2.3
+
+* Added support for XBM output using the -x parameter
+* Added the "-v" parameter which prints the bmp2hex version
 
 ## New in Version 2.1/2.2
 
-* The batch file has been removed. The main command line supports multiple files for input:
+* The batch file has been removed. The bin2hex command line now supports multiple files for input. For example:
 
 ``` bash
 $ python bmp2hex.sh *.bmp	
@@ -33,7 +38,7 @@ Results from bmp2hex.py are directed to **standard output**. You can redirect th
 ### The command line is:
 
 ``` bash
-$ python bmp2hex.py [-h] [-i] [-r] [-d] [-n] [-w WIDTH] [-b BYTESIZE] infile
+$ python bmp2hex.py [-h] [-i] [-r] [-d] [-n] [-v] [-w WIDTH] [-b BYTESIZE] infile
 ```
 
 ### Where:
@@ -44,6 +49,7 @@ $ python bmp2hex.py [-h] [-i] [-r] [-d] [-n] [-w WIDTH] [-b BYTESIZE] infile
 *-d, \-\-double* : Uses double byte 'uint16_t' for pixels rather than the default, 'uint8_t'<br />
 *-n, \-\-named* : Uses a named structure to type each bitmap<br />
 *-x, \-\-xbm* : Reverses the bit order to be consistent with XBM format<br />
+*-v, \-\-version* : Displays the bmp2hex version<br />
 *-w WIDTH* : Width of table in bytes. \[*default: 16*\]<br />
 *-b BYTESIZE* : In *raw* format only, the bytesize of bitmap dimensions. 0=auto, 1 or 2 (big endian) \[*default: 0*\]<br />
 *infile* : Path to input .bmp file. May use a list or wild cards for multiple files<br />
