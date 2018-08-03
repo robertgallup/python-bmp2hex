@@ -189,7 +189,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 	elif (xbm):
 		print ('#define ' + tablename + '_width ' + str(pixelWidth))
 		print ('#define ' + tablename + '_height ' + str(pixelHeight))
-		print ('PROGMEM uint8_t ' + tablename + '_bits[] = {')
+		print ('PROGMEM uint8_t const ' + tablename + '_bits[] = {')
 
 	else:
 		print ('PROGMEM const struct {')
