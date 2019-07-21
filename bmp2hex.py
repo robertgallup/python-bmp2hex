@@ -36,7 +36,7 @@ import sys, array, os, textwrap, math, random, argparse
 
 class DEFAULTS(object):
 	STRUCTURE_NAME = 'GFXMeta'
-	VERSION = '2.3'
+	VERSION = '2.3.2'
 
 def main ():
 
@@ -196,7 +196,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 		print ('  unsigned int   width;')
 		print ('  unsigned int   height;')
 		print ('  unsigned int   bitDepth;')
-		print ('  uint8_t        pixel_data[{0}];'.format(byteWidth * pixelHeight))
+		print ('  ' + ('uint8_t   *', 'uint16_t  *')[double] + 'pixel_data[{0}];'.format(byteWidth * pixelHeight)) 
 		print ('} ' + tablename + ' = {')
 		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth))
 

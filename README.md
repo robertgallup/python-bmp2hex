@@ -8,6 +8,10 @@ Compatability: 	Python 2/3
 Version:		2.3
 ```
 
+## New in Version 2.3.2
+
+* "-d" should work as you expect whether structure is "named" or not (i.e. with/without "-n" option)
+
 ## New in Version 2.3
 
 * Added support for XBM output using the -x parameter
