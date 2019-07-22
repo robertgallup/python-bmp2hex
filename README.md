@@ -2,15 +2,19 @@
 
 ```
 Author:    		Robert Gallup (bg@robertgallup.com)
-Date:      		August 1, 2018
+Date:      		July 22, 2019
 License:   		MIT Opensource License (see license.txt) 
 Compatability: 	Python 2/3
-Version:		2.3
+Version:		2.3.3
 ```
+
+## New in Version 2.3.3
+
+* FIXED: Among other things, the number of elements in the pixel_data[] array was incorrect when using the "-d" option. You might expect it to be half of what it is without "-d". But, it was not. Now it is. Less, but with everything else that was also fixed, so much more, than it was.
 
 ## New in Version 2.3.2
 
-* "-d" should work as you expect whether structure is "named" or not (i.e. with/without "-n" option)
+* FIXED: "-d" should work as you expect whether structure is "named" or not (i.e. with/without "-n" option)
 
 ## New in Version 2.3
 

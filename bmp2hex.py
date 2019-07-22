@@ -36,7 +36,7 @@ import sys, array, os, textwrap, math, random, argparse
 
 class DEFAULTS(object):
 	STRUCTURE_NAME = 'GFXMeta'
-	VERSION = '2.3.2'
+	VERSION = '2.3.3'
 
 def main ():
 
@@ -94,7 +94,7 @@ def main ():
 		print ('  unsigned   int height;')
 		print ('  unsigned   int bitDepth;')
 		print ('             int baseline;')
-		print ('  ' + ('uint8_t   *', 'uint16_t  *')[double] + 'pixel_data;')
+		print ('  ' + getDoubleType(double)[0] + 'pixel_data;')
 		print ('};')
 		print ('')
 
@@ -121,8 +121,23 @@ def reflect(a):
 		a >>= 1
 	return (r)
 
+# Returns as a tuple, the data type and length for double versus short data types
+def getDoubleType (d):
+	if d:
+		dType = 'uint16_t' + ' *'
+		dLen = 2
+	else:
+		dType = 'uint8_t' + ' *'
+		dLen = 1
+
+	return (dType, dLen)
+
+
 # Main conversion function
 def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
+
+	# Set up some variables to handle the "-d" option
+	(pixelDataType, dataByteLength) = getDoubleType(double)
 
 	# Set the table name to the uppercase root of the file name
 	tablename = os.path.splitext(infile)[0].upper()
@@ -184,19 +199,19 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 			print ("{0:#04X}".format(pixelWidth & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
 
 	elif (named):
-		print ('PROGMEM ' + 'uint8_t const ' + tablename + '_PIXELS[] = {')
+		print ('PROGMEM ' + getDoubleType(double)[0] + ' const ' + tablename + '_PIXELS[] = {')
 
 	elif (xbm):
 		print ('#define ' + tablename + '_width ' + str(pixelWidth))
 		print ('#define ' + tablename + '_height ' + str(pixelHeight))
-		print ('PROGMEM uint8_t const ' + tablename + '_bits[] = {')
+		print ('PROGMEM ' + getDoubleType(double)[0] + ' const ' + tablename + '_bits[] = {')
 
 	else:
 		print ('PROGMEM const struct {')
 		print ('  unsigned int   width;')
 		print ('  unsigned int   height;')
 		print ('  unsigned int   bitDepth;')
-		print ('  ' + ('uint8_t   *', 'uint16_t  *')[double] + 'pixel_data[{0}];'.format(byteWidth * pixelHeight)) 
+		print ('  ' + pixelDataType + 'pixel_data[{0}];'.format(byteWidth * pixelHeight / dataByteLength)) 
 		print ('} ' + tablename + ' = {')
 		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth))
 
@@ -219,7 +234,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 		if (named):
 			print ('};')
 			print (DEFAULTS.STRUCTURE_NAME + ' const ' + tablename + ' = {{{0}, {1}, {2}, 0, '.format(pixelWidth, pixelHeight, bitDepth) + \
-				 ('(uint8_t *)', '(uint16_t *)')[double] + tablename + "_PIXELS};\n\n")
+				 pixelDataType + tablename + "_PIXELS};\n\n")
 		else:
 			if (not (raw or xbm)):
 				print ("}")
