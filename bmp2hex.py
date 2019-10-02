@@ -20,7 +20,7 @@
 #	@param tablewidth	"-w <bytes>, The number of characters for each row of the output table [optional]
 #	@param sizebytes	"-b <bytes>, Bytes = 0, 1, or 2. 0 = auto. 1 = 1-byte for sizes. 2 = 2-byte sizes (big endian) [optional]
 #	@param named		"-n", use a names structure [optional]
-#	@param double		"-d", use double bytes rather than single ones [optional]
+##	@param double		"-d", use double bytes rather than single ones [optional]
 #	@param xbm			"-x", use XBM format (bits reversed in byte) [optional]
 #	@param version		"-v", returns version number
 #	
@@ -61,7 +61,7 @@ def main ():
 	parser.add_argument ("-w", "--width", help="Output table width in hex bytes [default: 16]", type=int)
 	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
 	parser.add_argument ("-n", "--named", help="Uses named structure (" + DEFAULTS.STRUCTURE_NAME + ") for data", action="store_true")
-	parser.add_argument ("-d", "--double", help="Defines data in 'words' rather than bytes", action="store_true")
+#	parser.add_argument ("-d", "--double", help="Defines data in 'words' rather than bytes", action="store_true")
 	parser.add_argument ("-x", "--xbm", help="Uses XBM bit order (low order bit is first pixel of byte)", action="store_true")
 	parser.add_argument ("-v", "--version", help="Returns the current bmp2hex version", action="store_true")
 	args = parser.parse_args()
@@ -80,8 +80,9 @@ def main ():
 		sizebytes = args.bytes % 3
 	if args.named:
 		named = args.named
-	if args.double:
-		double = args.double
+	# if args.double:
+	# 	double = args.double
+	double = False
 	if args.xbm:
 		xbm = args.xbm
 	if args.version:
@@ -188,10 +189,12 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 		invertbyte = invertbyte ^ 0xFF
 
 	# Output the hex table declaration
-	# Format depending on "raw" flag
+	# With "raw" output, output just an array of chars
 	if (raw):
+		# Output the data declaration
 		print ('PROGMEM unsigned char const ' + tablename + ' [] = {')
 
+		# Output the size of the BMP
 		if (not (sizebytes%2)):
 			print ("{0:#04X}".format((pixelWidth>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelWidth & 0xFF) + ", " + \
 		    	  "{0:#04X}".format((pixelHeight>>8) & 0xFF) + ", " + "{0:#04X}".format(pixelHeight & 0xFF) + ",")
