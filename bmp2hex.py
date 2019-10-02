@@ -36,7 +36,7 @@ import sys, array, os, textwrap, math, random, argparse
 
 class DEFAULTS(object):
 	STRUCTURE_NAME = 'GFXMeta'
-	VERSION = '2.3.3'
+	VERSION = '2.3.4'
 
 def main ():
 

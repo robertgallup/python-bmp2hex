@@ -8,6 +8,10 @@ Compatability: 	Python 2/3
 Version:		2.3.3
 ```
 
+## New in Version 2.3.4
+
+* UNFIXED: SO, I've given up on the -d parameter for now. Each "fix" raised new issues so unless I can find a specific use case, it's not worth the effort.
+
 ## New in Version 2.3.3
 
 * FIXED: Among other things, the number of elements in the pixel_data[] array was incorrect when using the "-d" option. You might expect it to be half of what it is without "-d". But, it was not. Now it is. Less, but with everything else that was also fixed, so much more, than it was.
