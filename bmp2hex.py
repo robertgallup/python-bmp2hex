@@ -29,14 +29,14 @@
 #	Author:    Robert Gallup (bg@robertgallup.com)
 #	License:   MIT Opensource License
 #
-#	Copyright 2016-2018 Robert Gallup 
+#	Copyright 2016-2022 Robert Gallup 
 #
 
-import sys, array, os, textwrap, math, random, argparse
+import sys, array, os, textwrap, math, random, argparse, struct
 
 class DEFAULTS(object):
 	STRUCTURE_NAME = 'GFXMeta'
-	VERSION = '2.3.4'
+	VERSION = '2.3.5'
 
 def main ():
 
@@ -56,14 +56,14 @@ def main ():
 	parser = argparse.ArgumentParser()
 	# parser.add_argument ("infile", help="The BMP file(s) to convert", type=argparse.FileType('r'), nargs='+', default=['-'])
 	parser.add_argument ("infile", help="The BMP file(s) to convert", type=argparse.FileType('r'), nargs='*', default=['-'])
-	parser.add_argument ("-r", "--raw", help="Outputs all data in raw table format", action="store_true")
-	parser.add_argument ("-i", "--invert", help="Inverts bitmap pixels", action="store_true")
-	parser.add_argument ("-w", "--width", help="Output table width in hex bytes [default: 16]", type=int)
-	parser.add_argument ("-b", "--bytes", help="Byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
-	parser.add_argument ("-n", "--named", help="Uses named structure (" + DEFAULTS.STRUCTURE_NAME + ") for data", action="store_true")
-#	parser.add_argument ("-d", "--double", help="Defines data in 'words' rather than bytes", action="store_true")
-	parser.add_argument ("-x", "--xbm", help="Uses XBM bit order (low order bit is first pixel of byte)", action="store_true")
-	parser.add_argument ("-v", "--version", help="Returns the current bmp2hex version", action="store_true")
+	parser.add_argument ("-r", "--raw", help="output all data in raw table format", action="store_true")
+	parser.add_argument ("-i", "--invert", help="invert bitmap pixels", action="store_true")
+	parser.add_argument ("-w", "--width", help="output table width in hex bytes [default: 16]", type=int)
+	parser.add_argument ("-b", "--bytes", help="set byte width of BMP sizes: 0=auto, 1, or 2 (big endian) [default: 0]", type=int)
+	parser.add_argument ("-n", "--named", help="use named structure (" + DEFAULTS.STRUCTURE_NAME + ") for data", action="store_true")
+#	parser.add_argument ("-d", "--double", help="define data in 'words' rather than bytes", action="store_true")
+	parser.add_argument ("-x", "--xbm", help="use XBM bit order (low order bit is first pixel of byte)", action="store_true")
+	parser.add_argument ("-v", "--version", help="echo the current bmp2hex version", action="store_true")
 	args = parser.parse_args()
 
 	# Required arguments
@@ -105,16 +105,8 @@ def main ():
 			sys.exit()
 		bmp2hex(f.name, tablewidth, sizebytes, invert, raw, named, double, xbm)
 
-# Utility function. Return a long int from array (little endian)
-def getLONG(a, n):
-	return (a[n+3] * (2**24)) + (a[n+2] * (2**16)) + (a[n+1] * (2**8)) + (a[n])
-
-# Utility function. Return an int from array (little endian)
-def getINT(a, n):
-	return ((a[n+1] * (2**8)) + (a[n]))
-
-# Reverses pixels in byte
 def reflect(a):
+	"""Reverse pixels in a byte."""
 	r = 0
 	for i in range(8):
 		r <<= 1
@@ -122,8 +114,8 @@ def reflect(a):
 		a >>= 1
 	return (r)
 
-# Returns as a tuple, the data type and length for double versus short data types
 def getDoubleType (d):
+	"""Return a tuple with the C data type name and length for double and short data types."""
 	if d:
 		dType = 'uint16_t' + ' *'
 		dLen = 2
@@ -133,9 +125,13 @@ def getDoubleType (d):
 
 	return (dType, dLen)
 
+def unsupported_file_error(msg):
+	"""Exit with unsupported file format message"""
+	sys.exit("error: " + msg)
 
 # Main conversion function
 def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
+	"""Comvert supported BMP files to hex string output"""
 
 	# Set up some variables to handle the "-d" option
 	(pixelDataType, dataByteLength) = getDoubleType(double)
@@ -163,14 +159,26 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 
 	# Exit if it's not a Windows BMP
 	if ((values[0] != 0x42) or (values[1] != 0x4D)):
-		sys.exit ("Error: Unsupported BMP format. Make sure your file is a Windows BMP.")
+		unsupported_file_error("Not BMP file.")
 
-	# Calculate width, heigth
-	dataOffset	= getLONG(values, 10)	# Offset to image data
-	pixelWidth  = getLONG(values, 18)	# Width of image
-	pixelHeight = getLONG(values, 22)	# Height of image
-	bitDepth	= getINT (values, 28)	# Bits per pixel
-	dataSize	= getLONG(values, 34)   # Size of raw data
+	# Unpack header values using struct
+	# Note: bytes(bytearray)) is used for compatibility with python < 2.7.3
+	dataOffset,  \
+	headerSize,  \
+	pixelWidth,  \
+	pixelHeight, \
+	colorPlanes, \
+	bitDepth,    \
+	compression, \
+	dataSize     = struct.unpack("<2L2l2h2L", bytes(bytearray(values[10:38])))
+
+	# Check other conditions for compatibility
+	if bitDepth > 16:
+		unsupported_file_error("unsupported bit depth (max 16): " + str(bitDepth))
+	elif pixelWidth < 0:
+		unsupported_file_error("unsupported negative pixel width: " + str(pixelWidth))
+	elif pixelHeight < 0:
+		unsupported_file_error("unsupported negative pixel height: " + str(pixelHeight))
 
 	# Calculate line width in bytes and padded byte width (each row is padded to 4-byte multiples)
 	byteWidth	= int(math.ceil(float(pixelWidth * bitDepth)/8.0))
@@ -214,7 +222,7 @@ def bmp2hex(infile, tablewidth, sizebytes, invert, raw, named, double, xbm):
 		print ('  unsigned int   width;')
 		print ('  unsigned int   height;')
 		print ('  unsigned int   bitDepth;')
-		print ('  ' + pixelDataType + 'pixel_data[{0}];'.format(byteWidth * pixelHeight / dataByteLength)) 
+		print ('  ' + pixelDataType + 'pixel_data[{0}];'.format(round(byteWidth * pixelHeight / dataByteLength))) 
 		print ('} ' + tablename + ' = {')
 		print ('{0}, {1}, {2}, {{'.format(pixelWidth, pixelHeight, bitDepth))
 

@@ -4,9 +4,14 @@
 Author:    		Robert Gallup (bg@robertgallup.com)
 Date:      		July 22, 2019
 License:   		MIT Opensource License (see license.txt) 
-Compatability: 	Python 2/3
-Version:		2.3.3
+Compatability: 		Python 2/3
+Version:		2.3.5
 ```
+
+## New in Version 2.3.5
+
+* Tried to provide more extensive and useful error messages for unsupported files. Checks for non-BMP file types, bit depth > 16 and negative pixel widths and heights.
+* Some other minor changes that *shouldn't* affect output
 
 ## New in Version 2.3.4
 
