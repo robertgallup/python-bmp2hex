@@ -2,7 +2,7 @@
 
 ```
 Author:    		Robert Gallup (bg@robertgallup.com)
-Date:      		July 22, 2019
+Date:      		February, 26 2022
 License:   		MIT Opensource License (see license.txt) 
 Compatability: 		Python 2/3
 Version:		2.3.5
